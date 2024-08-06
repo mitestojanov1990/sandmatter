@@ -1,3 +1,3 @@
 import WebSocketServer from './websocketServer';
 
-export default WebSocketServer
+export default WebSocketServer;

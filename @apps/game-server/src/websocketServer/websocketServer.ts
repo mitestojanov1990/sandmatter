@@ -156,14 +156,14 @@ class WebSocketServer {
       console.log('Client connected');
       sendParticlesInChunks(ws);
 
-      const updateIntervalId = setInterval(() => {
-        updateParticles();
-        sendParticlesInChunks(ws);
-      }, updateInterval);
+      // const updateIntervalId = setInterval(() => {
+      //   updateParticles();
+      //   sendParticlesInChunks(ws);
+      // }, updateInterval);
 
       ws.on('close', () => {
         console.log('Client disconnected');
-        clearInterval(updateIntervalId);
+        //clearInterval(updateIntervalId);
       });
     });
   }

@@ -1,13 +1,16 @@
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 const friction = 0.9;
-
+export type Velocity = {
+  x: number;
+  y: number;
+};
 export class Particle {
   x: number;
   y: number;
   radius: number;
   color: string;
-  velocity: { x: number; y: number };
+  velocity: Velocity;
 
   constructor(x: number, y: number, radius: number, color: string) {
     this.x = x;
