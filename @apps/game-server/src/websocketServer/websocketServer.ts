@@ -14,11 +14,9 @@ interface Config {
   canConnect: boolean;
 }
 
-const particles: Particle[] = [];
-const canvasWidth = 800;
-const canvasHeight = 600;
+let particles: Particle[] = [];
 const friction = 0.9;
-const updateInterval = 60000 / 60; // Update at 60 FPS
+const updateInterval = 12000000 / 60; // Update at 60 FPS
 const chunkSize = 100; // Number of particles per chunk
 
 const config: Config = {
@@ -27,6 +25,7 @@ const config: Config = {
 };
 
 function generateParticles(width: number, height: number, density: number) {
+  particles = []; // Reset particles
   const numParticles = Math.floor(width * height * density);
   for (let i = 0; i < numParticles; i++) {
     const radius = 5;
@@ -92,7 +91,7 @@ function rotate(velocity: { x: number; y: number }, angle: number) {
   };
 }
 
-function updateParticles() {
+function updateParticles(canvasWidth: number, canvasHeight: number) {
   particles.forEach((particle) => {
     if (
       particle.y + particle.radius + particle.velocity.y > canvasHeight ||
@@ -125,7 +124,11 @@ function updateParticles() {
   }
 }
 
-function sendParticlesInChunks(ws: WebSocket) {
+function sendParticlesInChunks(
+  ws: WebSocket,
+  screenWidth: number,
+  screenHeight: number,
+) {
   let chunkIndex = 0;
 
   const sendChunk = () => {
@@ -142,30 +145,40 @@ function sendParticlesInChunks(ws: WebSocket) {
 
   sendChunk();
 }
-
 class WebSocketServer {
   private wss: WSServer;
+  private width: number;
+  private height: number;
 
   constructor(server: Server) {
     this.wss = new WSServer({ server });
-
-    // Generate particles at startup
-    generateParticles(canvasWidth, canvasHeight, 0.8);
+    this.width = 10;
+    this.height = 10;
 
     this.wss.on('connection', (ws) => {
       console.log('Client connected');
-      sendParticlesInChunks(ws);
 
-      // const updateIntervalId = setInterval(() => {
-      //   updateParticles();
-      //   sendParticlesInChunks(ws);
-      // }, updateInterval);
+      ws.on('message', (message) => {
+        const { width, height } = JSON.parse(message.toString());
+        this.width = width;
+        this.height = height;
+        generateParticles(width, height, 0.8);
+        sendParticlesInChunks(ws, width, height);
+      });
 
       ws.on('close', () => {
         console.log('Client disconnected');
-        //clearInterval(updateIntervalId);
       });
     });
+
+    setInterval(() => {
+      updateParticles(this.width, this.height);
+      this.wss.clients.forEach((client) => {
+        if (client.readyState === client.OPEN) {
+          sendParticlesInChunks(client as WebSocket, this.width, this.height);
+        }
+      });
+    }, updateInterval);
   }
 }
 
