@@ -1,4 +1,7 @@
-import { Particle as ParticleType, Velocity } from './types';
+import {
+  Velocity,
+  Particle as ParticleType,
+} from '@dimitrycode/particle-generator/src';
 const friction = 0.9;
 
 export class Particle implements ParticleType {

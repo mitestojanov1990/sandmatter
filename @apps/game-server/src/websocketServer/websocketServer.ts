@@ -16,7 +16,7 @@ interface Config {
 
 let particles: Particle[] = [];
 const friction = 0.9;
-const updateInterval = 12000000 / 60; // Update at 60 FPS
+const updateInterval = 60000 / 60; // Update at 60 FPS
 const chunkSize = 100; // Number of particles per chunk
 
 const config: Config = {
@@ -24,7 +24,11 @@ const config: Config = {
   canConnect: false,
 };
 
-function generateParticles(width: number, height: number, density: number) {
+export function generateParticles(
+  width: number,
+  height: number,
+  density: number,
+) {
   particles = []; // Reset particles
   const numParticles = Math.floor(width * height * density);
   for (let i = 0; i < numParticles; i++) {
@@ -43,6 +47,9 @@ function generateParticles(width: number, height: number, density: number) {
       },
     });
   }
+}
+export function getParticles(): Particle[] {
+  return particles;
 }
 
 function resolveCollision(particle: Particle, otherParticle: Particle) {
@@ -110,7 +117,6 @@ function updateParticles(canvasWidth: number, canvasHeight: number) {
     particle.x += particle.velocity.x;
     particle.y += particle.velocity.y;
   });
-
   for (let i = 0; i < particles.length; i++) {
     for (let j = i + 1; j < particles.length; j++) {
       const dist = Math.hypot(
@@ -124,11 +130,7 @@ function updateParticles(canvasWidth: number, canvasHeight: number) {
   }
 }
 
-function sendParticlesInChunks(
-  ws: WebSocket,
-  screenWidth: number,
-  screenHeight: number,
-) {
+function sendParticlesInChunks(ws: WebSocket, isInitial: boolean) {
   let chunkIndex = 0;
 
   const sendChunk = () => {
@@ -137,7 +139,7 @@ function sendParticlesInChunks(
     const chunk = particles.slice(start, end);
 
     if (chunk.length > 0) {
-      ws.send(JSON.stringify(chunk));
+      ws.send(JSON.stringify({ particles: chunk, isInitial }));
       chunkIndex++;
       setTimeout(sendChunk, 50); // Send next chunk after a short delay
     }
@@ -145,6 +147,7 @@ function sendParticlesInChunks(
 
   sendChunk();
 }
+
 class WebSocketServer {
   private wss: WSServer;
   private width: number;
@@ -163,7 +166,7 @@ class WebSocketServer {
         this.width = width;
         this.height = height;
         generateParticles(width, height, 0.8);
-        sendParticlesInChunks(ws, width, height);
+        sendParticlesInChunks(ws, true);
       });
 
       ws.on('close', () => {
@@ -171,15 +174,17 @@ class WebSocketServer {
       });
     });
 
-    setInterval(() => {
+    const updateAndBroadcast = () => {
       updateParticles(this.width, this.height);
       this.wss.clients.forEach((client) => {
         if (client.readyState === client.OPEN) {
-          sendParticlesInChunks(client as WebSocket, this.width, this.height);
+          sendParticlesInChunks(client as WebSocket, false);
         }
       });
-    }, updateInterval);
+      setTimeout(updateAndBroadcast, updateInterval);
+    };
+
+    updateAndBroadcast();
   }
 }
-
 export default WebSocketServer;

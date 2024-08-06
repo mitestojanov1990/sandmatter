@@ -1,4 +1,4 @@
-import { Particle } from './types';
+import { Particle } from '@dimitrycode/particle-generator/src';
 import { Particle as ParticleClass } from './classes/Particle';
 
 const particles: Particle[] = [];
