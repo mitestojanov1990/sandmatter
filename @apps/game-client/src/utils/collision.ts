@@ -1,4 +1,4 @@
-import { Particle } from "../classes/Particle";
+import { Particle } from '../types';
 
 export function resolveCollision(particle: Particle, otherParticle: Particle) {
   const xVelocityDiff = particle.velocity.x - otherParticle.velocity.x;
@@ -10,7 +10,7 @@ export function resolveCollision(particle: Particle, otherParticle: Particle) {
   if (xVelocityDiff * xDist + yVelocityDiff * yDist >= 0) {
     const angle = -Math.atan2(
       otherParticle.y - particle.y,
-      otherParticle.x - particle.x
+      otherParticle.x - particle.x,
     );
 
     const m1 = particle.radius;
@@ -39,11 +39,15 @@ export function resolveCollision(particle: Particle, otherParticle: Particle) {
   }
 }
 
-function rotate(velocity: { x: number; y: number }, angle: number) {
-  const rotatedVelocities = {
+export function rotate(velocity: { x: number; y: number }, angle: number) {
+  return {
     x: velocity.x * Math.cos(angle) - velocity.y * Math.sin(angle),
     y: velocity.x * Math.sin(angle) + velocity.y * Math.cos(angle),
   };
+}
 
-  return rotatedVelocities;
+export function getCellKey(x: number, y: number, cellSize: number): string {
+  const cellX = Math.floor(x / cellSize);
+  const cellY = Math.floor(y / cellSize);
+  return `${cellX},${cellY}`;
 }

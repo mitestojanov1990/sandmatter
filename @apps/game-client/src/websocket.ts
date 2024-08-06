@@ -1,21 +1,25 @@
-import { initializeParticles, updateParticles } from './main';
+import { initializeParticles, updateParticles } from './particles';
 
-let particles = [];
-let ws;
+let ws: WebSocket;
 
-function connectWebSocket() {
+export function connectWebSocket() {
   ws = new WebSocket('ws://localhost:8080');
 
   ws.onopen = () => {
     console.log('Connected to server');
+    ws.send(
+      JSON.stringify({ width: window.innerWidth, height: window.innerHeight }),
+    );
   };
 
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    if (particles.length === 0) {
-      initializeParticles(data);
-    } else {
-      updateParticles(data);
+    if (data.particles) {
+      if (data.isInitial) {
+        initializeParticles(data.particles);
+      } else {
+        updateParticles(data.particles);
+      }
     }
   };
 
@@ -28,5 +32,3 @@ function connectWebSocket() {
     console.error('WebSocket error:', error);
   };
 }
-
-connectWebSocket();

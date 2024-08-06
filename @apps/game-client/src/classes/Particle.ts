@@ -1,11 +1,7 @@
-const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+import { Particle as ParticleType, Velocity } from './types';
 const friction = 0.9;
-export type Velocity = {
-  x: number;
-  y: number;
-};
-export class Particle {
+
+export class Particle implements ParticleType {
   x: number;
   y: number;
   radius: number;
@@ -23,7 +19,7 @@ export class Particle {
     };
   }
 
-  draw() {
+  draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
     ctx.fillStyle = this.color;
@@ -31,7 +27,7 @@ export class Particle {
     ctx.closePath();
   }
 
-  update() {
+  update(canvas: HTMLCanvasElement) {
     if (
       this.y + this.radius + this.velocity.y > canvas.height ||
       this.y - this.radius <= 0
@@ -49,6 +45,6 @@ export class Particle {
     this.x += this.velocity.x;
     this.y += this.velocity.y;
 
-    this.draw();
+    this.draw(canvas.getContext('2d') as CanvasRenderingContext2D);
   }
 }
