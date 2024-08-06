@@ -1,85 +1,109 @@
-import * as Matter from 'matter-js';
+import Matter from 'matter-js';
+import MatterWrap from 'matter-wrap';
 
-// module aliases
-const engine: Matter.Engine = Matter.Engine.create();
+// Install the plugin
+Matter.use(MatterWrap);
 
-// create a renderer
-const render: Matter.Render = Matter.Render.create({
-  element: document.body,
-  engine: engine,
-  options: {
-    wireframes: false,
-  },
-});
+const Example = {};
 
-// create two boxes and a ground
-const boxA: Matter.Body = Matter.Bodies.rectangle(400, 200, 80, 80, {
-  render: {
-    fillStyle: 'red',
-    strokeStyle: 'black',
-    lineWidth: 1,
-  },
-});
-const boxB: Matter.Body = Matter.Bodies.rectangle(450, 50, 80, 80);
-const ground: Matter.Body = Matter.Bodies.rectangle(400, 610, 810, 60, {
-  isStatic: true,
-});
-const circle: Matter.Body = Matter.Bodies.circle(300, 40, 25);
+Example.basic = function() {
+  // module aliases
+  const { Engine, Runner, Render, World, Body, Mouse, Common, Bodies, Composites } = Matter;
 
-// add all of the bodies to the world
-Matter.Composite.add(engine.world, [circle, boxA, boxB, ground]);
+  // create engine
+  const engine = Engine.create();
 
-document.addEventListener('keydown', (event: KeyboardEvent) => {
-  let keyCode = event.keyCode;
-  let position: Matter.Vector = boxA.position;
-  let speed = 5; // set the speed of movement
+  // create renderer
+  const render = Render.create({
+    element: document.body,
+    engine: engine,
+    options: {
+      width: Math.min(document.body.clientWidth, 1024),
+      height: Math.min(document.body.clientHeight, 1024),
+      wireframes: false,
+    },
+  });
 
-  // move the body based on the key pressed
-  if (keyCode === 37) {
-    // move left
-    Matter.Body.translate(boxA, { x: -speed, y: 0 });
-  } else if (keyCode === 38) {
-    // move up
-    Matter.Body.translate(boxA, { x: 0, y: -speed });
-  } else if (keyCode === 39) {
-    // move right
-    Matter.Body.translate(boxA, { x: speed, y: 0 });
-  } else if (keyCode === 40) {
-    // move down
-    Matter.Body.translate(boxA, { x: 0, y: speed });
-  }
-});
+  Render.run(render);
 
-document.body.addEventListener('mousedown', (event: MouseEvent) => {
-  const { x, y } = event;
-  const newBody: Matter.Body = Matter.Bodies.rectangle(x, y, 50, 50);
-  Matter.World.add(engine.world, newBody);
-});
+  // create runner
+  const runner = Runner.create();
+  Runner.run(runner, engine);
 
-// Check for collisions
-Matter.Events.on(
-  engine,
-  'collisionStart',
-  (event: Matter.IEventCollision<Matter.Engine>) => {
-    const pairs = event.pairs;
+  // create demo scene
+  const world = engine.world;
+  world.gravity.scale = 0;
 
-    for (let i = 0; i < pairs.length; i++) {
-      const pair = pairs[i];
+  // add some random bodies
+  for (let i = 0; i < 150; i += 1) {
+    const body = Bodies.polygon(
+      Common.random(0, render.options.width),
+      Common.random(0, render.options.height),
+      Common.random(1, 5),
+      Common.random() > 0.9 ? Common.random(15, 25) : Common.random(5, 10),
+      {
+        friction: 0,
+        frictionAir: 0,
 
-      if (pair.bodyA === boxA && pair.bodyB === circle) {
-        // Game over
-        alert('Game over!');
-        window.location.reload();
+        // set the body's wrapping bounds
+        plugin: {
+          wrap: {
+            min: { x: 0, y: 0 },
+            max: { x: render.canvas.width, y: render.canvas.height },
+          },
+        },
       }
-    }
+    ) as Matter.Body & { plugin: { wrap: MatterWrap.WrapOptions } };
+
+    Body.setVelocity(body, {
+      x: Common.random(-3, 3) + 3,
+      y: Common.random(-3, 3) + 3,
+    });
+
+    World.add(world, body);
   }
-);
 
-// run the renderer
-Matter.Render.run(render);
+  // add a composite
+  const car = Composites.car(150, 100, 100, 30, 20);
 
-// create runner
-const runner: Matter.Runner = Matter.Runner.create();
+  // set the composite's wrapping bounds
+  (car as Matter.Composite & { plugin: { wrap: MatterWrap.WrapOptions } }).plugin.wrap = {
+    min: { x: 0, y: 0 },
+    max: { x: render.canvas.width, y: render.canvas.height },
+  };
 
-// run the engine
-Matter.Runner.run(runner, engine);
+  for (let i = 0; i < car.bodies.length; i += 1) {
+    Body.setVelocity(car.bodies[i], {
+      x: Common.random(-3, 3) + 3,
+      y: Common.random(-3, 3) + 3,
+    });
+  }
+
+  World.add(world, car);
+
+  // add mouse control
+  const mouseConstraint = Matter.MouseConstraint.create(engine, {
+    mouse: Mouse.create(render.canvas),
+    constraint: {
+      stiffness: 0.2,
+      render: { visible: false },
+    },
+  });
+
+  World.add(world, mouseConstraint);
+
+  // context for MatterTools.Demo
+  return {
+    engine: engine,
+    runner: runner,
+    render: render,
+    canvas: render.canvas,
+    stop: function() {
+      Matter.Render.stop(render);
+      Matter.Runner.stop(runner);
+    },
+  };
+};
+
+// Initialize the example
+Example.basic();

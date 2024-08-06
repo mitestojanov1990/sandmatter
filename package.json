@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@types/matter-js": "^0.19.7",
-    "matter-js": "^0.20.0"
+    "matter-js": "^0.20.0",
+    "matter-wrap": "^0.2.0"
   }
 }
